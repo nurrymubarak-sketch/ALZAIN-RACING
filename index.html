@@ -21,7 +21,6 @@
             align-items: center;
             font-family: 'Orbitron', 'Arial', sans-serif;
             overflow: hidden;
-            touch-action: pan-y pinch-zoom;
         }
 
         .game-container {
@@ -38,7 +37,6 @@
             margin: 0 auto;
             border-radius: 25px;
             box-shadow: 0 0 40px rgba(0,0,0,0.6);
-            cursor: pointer;
         }
 
         .info-panel {
@@ -58,7 +56,6 @@
         .score-box, .speed-box {
             font-size: 1.2rem;
             font-weight: bold;
-            letter-spacing: 1px;
             background: rgba(0,0,0,0.5);
             padding: 5px 15px;
             border-radius: 30px;
@@ -70,7 +67,6 @@
             padding: 6px 14px;
             border-radius: 30px;
             color: white;
-            text-shadow: none;
             font-weight: bold;
             box-shadow: 0 0 10px orange;
         }
@@ -96,14 +92,12 @@
             text-align: center;
             min-width: 100px;
             box-shadow: 0 0 12px rgba(0,255,255,0.4);
-            font-family: monospace;
         }
 
         .ctrl-btn:active {
             transform: scale(0.92);
             background: #0ff;
             color: black;
-            box-shadow: 0 0 25px #0ff;
         }
 
         .music-btn {
@@ -154,7 +148,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        // === قائمة السيارات الخارقة الحقيقية مع ألوانها الخاصة ===
+        // قائمة السيارات الخارقة الحقيقية
         const HYPERCARS = [
             { name: "KOENIGSEGG JESKO", mainColor: "#F5B81B", lightColor: "#FFD966", darkColor: "#B87D00", speed: 480, emblem: "K", accent: "#FFAA22" },
             { name: "LAMBORGHINI REVUELTO", mainColor: "#6DC44A", lightColor: "#8FDF6B", darkColor: "#3A7822", speed: 350, emblem: "L", accent: "#AAFF44" },
@@ -169,7 +163,6 @@
         let currentCar = HYPERCARS[currentIndex];
         document.getElementById('carNameDisplay').innerHTML = `🏎️ ${currentCar.name}`;
         
-        // متغيرات اللعبة
         let playerX = canvas.width/2 - 40;
         const PLAYER_W = 80;
         const PLAYER_H = 100;
@@ -181,14 +174,13 @@
         let frame = 0;
         let spawnDelay = 0;
         
-        // الموسيقى الهادئة
+        // الموسيقى
         let audioCtx = null;
         let musicActive = false;
         let musicIntervalId = null;
         let osc = null;
         let gain = null;
         
-        // === وظائف الموسيقى ===
         function initMusic() {
             if(audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -199,9 +191,7 @@
         
         function startAmbientMusic() {
             if(!musicActive || !audioCtx) return;
-            if(osc) {
-                try{ osc.stop(); }catch(e){}
-            }
+            if(osc) { try{ osc.stop(); }catch(e){} }
             osc = audioCtx.createOscillator();
             osc.type = "sine";
             osc.frequency.value = 261.63;
@@ -221,10 +211,8 @@
             if(osc) { try{ osc.stop(); }catch(e){} osc = null; }
         }
         
-        // === رسم سيارة حقيقية بالتفاصيل ===
         function drawRealisticCar(x, y, w, h, car, isPolice = false) {
             if(isPolice) {
-                // سيارة شرطة حديثة
                 ctx.fillStyle = "#0A1C2E";
                 ctx.shadowBlur = 8;
                 ctx.shadowColor = "#0ff";
@@ -242,7 +230,6 @@
                 return;
             }
             
-            // جسم السيارة الخارقة الرئيسي
             ctx.shadowBlur = 12;
             ctx.shadowColor = car.accent;
             ctx.fillStyle = car.mainColor;
@@ -250,19 +237,16 @@
             ctx.roundRect(x, y, w, h, 14);
             ctx.fill();
             
-            // غطاء المحرك بلمعة
             ctx.fillStyle = car.lightColor;
             ctx.beginPath();
             ctx.roundRect(x+10, y+8, w-20, 22, 8);
             ctx.fill();
             
-            // الزجاج الأمامي
             ctx.fillStyle = "#AADDFF";
             ctx.beginPath();
             ctx.roundRect(x+15, y+32, w-30, 20, 6);
             ctx.fill();
             
-            // العجلات
             ctx.fillStyle = "#1A1A1A";
             ctx.fillRect(x+5, y+h-18, 16, 16);
             ctx.fillRect(x+w-21, y+h-18, 16, 16);
@@ -270,30 +254,18 @@
             ctx.fillRect(x+7, y+h-16, 12, 12);
             ctx.fillRect(x+w-19, y+h-16, 12, 12);
             
-            // جنوط رياضية
-            ctx.fillStyle = "#CCCCCC";
-            for(let i=0;i<4;i++){
-                ctx.fillRect(x+8 + i*3, y+h-14, 2, 6);
-                ctx.fillRect(x+w-18 + i*3, y+h-14, 2, 6);
-            }
-            
-            // مصابيح أمامية LED
             ctx.fillStyle = "#FFFFAA";
             ctx.fillRect(x+4, y+8, 10, 8);
             ctx.fillRect(x+w-14, y+8, 10, 8);
             
-            // شعار العلامة
             ctx.fillStyle = "#FFF5CF";
             ctx.font = `bold ${Math.floor(w/5)}px "Arial"`;
-            ctx.shadowBlur = 4;
             ctx.fillText(car.emblem, x+w/2-10, y+h-45);
             
-            // جناح خلفي
             ctx.fillStyle = car.darkColor;
             ctx.fillRect(x+15, y-6, w-30, 6);
         }
         
-        // إضافة دالة roundRect
         if(!CanvasRenderingContext2D.prototype.roundRect){
             CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
                 if(w<2*r) r=w/2;
@@ -311,21 +283,18 @@
             };
         }
         
-        // تحديث السرعة
         function updateSpeed() {
             let target = Math.min(currentCar.speed, 70 + Math.floor(score/4));
             currentSpeedKmh = Math.floor(currentSpeedKmh * 0.93 + target * 0.07);
             document.getElementById('speedValue').innerText = Math.min(currentCar.speed, currentSpeedKmh);
         }
         
-        // حركة السيارة
         function handleMovement() {
             if(leftPressed) playerX -= 9;
             if(rightPressed) playerX += 9;
             playerX = Math.min(Math.max(playerX, 12), canvas.width - PLAYER_W - 12);
         }
         
-        // إضافة خصوم
         function addEnemy() {
             let w = 68, h = 92;
             enemies.push({
@@ -336,7 +305,6 @@
             });
         }
         
-        // تحديث موقع الخصوم
         function updateEnemies() {
             for(let i=0;i<enemies.length;i++){
                 enemies[i].y += 4.5 + score/400;
@@ -350,7 +318,6 @@
             }
         }
         
-        // التصادم
         function collisionDetect() {
             for(let e of enemies){
                 if(playerX < e.x+e.w && playerX+PLAYER_W > e.x &&
@@ -362,11 +329,9 @@
             return false;
         }
         
-        // رسم الخلفية والطريق
         function drawRoad() {
             ctx.fillStyle = "#07121E";
             ctx.fillRect(0,0,canvas.width,canvas.height);
-            // حارات الطريق
             ctx.strokeStyle = "#FFCC66";
             ctx.lineWidth = 5;
             ctx.setLineDash([35, 50]);
@@ -377,7 +342,6 @@
                 ctx.stroke();
             }
             ctx.setLineDash([]);
-            // جوانب الطريق
             ctx.fillStyle = "#2A3F5E";
             for(let s=0;s<12;s++){
                 ctx.fillRect(12, (s*70+frame*2)%canvas.height, 8, 35);
@@ -385,7 +349,6 @@
             }
         }
         
-        // تبديل السيارات كل 14 ثانية
         setInterval(()=>{
             if(!gameRunning) return;
             currentIndex = (currentIndex+1)%HYPERCARS.length;
@@ -395,14 +358,12 @@
             setTimeout(()=> canvas.style.boxShadow = "", 400);
         }, 14000);
         
-        // الحلقة الرئيسية
         function animate(){
             if(!gameRunning){
                 ctx.fillStyle = "rgba(0,0,0,0.85)";
                 ctx.fillRect(0,0,canvas.width,canvas.height);
                 ctx.fillStyle = "#FF3366";
                 ctx.font = "bold 32px Orbitron";
-                ctx.shadowBlur = 0;
                 ctx.fillText("GAME OVER", canvas.width/2-110, canvas.height/2-30);
                 ctx.font = "18px monospace";
                 ctx.fillStyle = "#0ff";
@@ -420,14 +381,11 @@
             }
             
             drawRoad();
-            // رسم السيارة الرئيسية
             drawRealisticCar(playerX, canvas.height-118, PLAYER_W, PLAYER_H, currentCar, false);
-            // رسم سيارات الشرطة
             for(let e of enemies){
                 drawRealisticCar(e.x, e.y, e.w, e.h, null, true);
             }
             
-            // معلومات إضافية
             ctx.font = "bold 14px monospace";
             ctx.fillStyle = "#0ff";
             ctx.fillText(`MAX: ${currentCar.speed} km/h`, 18, 45);
@@ -437,7 +395,6 @@
             requestAnimationFrame(animate);
         }
         
-        // === ربط الأزرار ===
         function bindControls(){
             const left = document.getElementById('leftBtn');
             const right = document.getElementById('rightBtn');
@@ -469,7 +426,6 @@
             });
         }
         
-        // زر الموسيقى
         const musicBtn = document.getElementById('musicToggle');
         musicBtn.addEventListener('click', ()=>{
             if(!musicActive){
@@ -487,12 +443,10 @@
             }
         });
         
-        // بدء اللعبة
         bindControls();
         updateSpeed();
         animate();
         
-        // تحديث السرعة كل 0.2 ثانية
         setInterval(()=> { if(gameRunning) updateSpeed(); }, 200);
     })();
 </script>
