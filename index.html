@@ -3,36 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ALZAIN RACING REAL</title>
+    <title>ALZAIN RACING - OFFICIAL</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; touch-action: none; }
+        body { margin: 0; overflow: hidden; background: #222; font-family: sans-serif; touch-action: none; }
         canvas { display: block; margin: 0 auto; background: #333; }
-        #ui { position: absolute; top: 15px; width: 100%; text-align: center; color: #f1c40f; pointer-events: none; z-index: 10; font-weight: bold; text-shadow: 2px 2px 4px #000; }
-        #controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; z-index: 20; }
-        .btn { width: 75px; height: 75px; background: rgba(0,0,0,0.7); border: 3px solid #555; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; color: white; }
-        .btn:active { transform: scale(0.9); border-color: #f1c40f; }
-        .gas { border-color: #2ecc71; } .brake { border-color: #e74c3c; }
-        #start-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; background: #2ecc71; color: white; border-radius: 50px; font-size: 20px; cursor: pointer; z-index: 100; border: none; }
+        #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; pointer-events: none; }
+        #controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box; }
+        .btn { width: 70px; height: 70px; background: rgba(0,0,0,0.5); border: 3px solid #777; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; color: white; }
+        .btn:active { background: rgba(255,255,255,0.2); transform: scale(0.9); }
+        .gas { border-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .brake { border-color: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
+        #start { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f1c40f; color: black; padding: 20px 40px; border-radius: 50px; font-weight: bold; cursor: pointer; z-index: 100; }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <h2>ALZAIN RACING</h2>
-        <div>Score: <span id="score">0</span> | Speed: <span id="speed">0</span> km/h</div>
+        <h2 style="margin:0; color:#f1c40f">ALZAIN RACING</h2>
+        <div style="font-size: 18px;">Score: <span id="score">0</span> | Speed: <span id="speedVal">0</span> km/h</div>
     </div>
 
-    <button id="start-btn" onclick="start()">بدء السباق الحقيقي 🏎️</button>
+    <div id="start">دوران المحرك 🏎️</div>
     <canvas id="gameCanvas"></canvas>
 
     <div id="controls">
         <div style="display:flex; gap:10px;">
-            <div class="btn" id="l">◀</div>
-            <div class="btn" id="r">▶</div>
+            <div class="btn" id="leftBtn">◀</div>
+            <div class="btn" id="rightBtn">▶</div>
         </div>
         <div style="display:flex; gap:10px;">
-            <div class="btn brake" id="b">🛑</div>
-            <div class="btn gas" id="g">🏁</div>
+            <div class="btn brake" id="brakeBtn">🛑</div>
+            <div class="btn gas" id="gasBtn">🏁</div>
         </div>
     </div>
 
@@ -42,54 +43,62 @@
         canvas.width = window.innerWidth > 450 ? 450 : window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let score = 0, speed = 0, active = false, gassing = false, braking = false;
-        let carX = canvas.width / 2 - 25, enemies = [];
+        let score = 0, speed = 0, gameActive = false, isGassing = false, isBraking = false;
+        let carX = canvas.width/2 - 25, roadLine = 0;
+        let enemies = [];
 
-        // رسم سيارة واقعية بدقة عالية
+        // دالة لرسم سيارة احترافية برمجياً
         function drawCar(x, y, color, isPlayer) {
             ctx.fillStyle = color;
-            ctx.fillRect(x, y, 50, 90); // الجسم
+            ctx.fillRect(x, y, 50, 90); // الجسم الرئيسي
             ctx.fillStyle = "#000";
-            ctx.fillRect(x-5, y+10, 5, 20); ctx.fillRect(x+50, y+10, 5, 20); // عجلات
+            ctx.fillRect(x-5, y+10, 5, 20); ctx.fillRect(x+50, y+10, 5, 20); // التواير
             ctx.fillRect(x-5, y+60, 5, 20); ctx.fillRect(x+50, y+60, 5, 20);
-            ctx.fillStyle = "#add8e6"; ctx.fillRect(x+5, y+15, 40, 20); // زجاج
-            if(isPlayer) { ctx.fillStyle = "#f1c40f"; ctx.fillRect(x+5, y+85, 10, 5); ctx.fillRect(x+35, y+85, 10, 5); } // أنوار
+            ctx.fillStyle = "rgba(255,255,255,0.5)"; // الزجاج
+            ctx.fillRect(x+5, y+20, 40, 25);
+            if(isPlayer) { // إضاءة للعب
+                ctx.fillStyle = "#f1c40f"; ctx.fillRect(x+5, y, 10, 5); ctx.fillRect(x+35, y, 10, 5);
+            }
         }
 
-        function start() {
-            document.getElementById('start-btn').style.display = 'none';
-            active = true;
+        document.getElementById('start').onclick = () => {
+            gameActive = true;
+            document.getElementById('start').style.display = 'none';
             update();
-        }
+        };
 
         function update() {
-            if (!active) return;
-            ctx.fillStyle = "#333"; ctx.fillRect(0,0, canvas.width, canvas.height);
-            
-            // خطوط الطريق
-            ctx.strokeStyle = "#fff"; ctx.setLineDash([30, 30]);
-            ctx.lineWidth = 4; ctx.beginPath();
-            ctx.moveTo(canvas.width/2, 0); ctx.lineTo(canvas.width/2, canvas.height); ctx.stroke();
+            if (!gameActive) return;
+            ctx.clearRect(0,0, canvas.width, canvas.height);
 
-            // السرعة والتحكم
-            if (gassing) speed = Math.min(speed + 0.2, 15);
-            else if (braking) speed = Math.max(speed - 0.5, 0);
+            // تحكم السرعة
+            if (isGassing) speed = Math.min(speed + 0.2, 15);
+            else if (isBraking) speed = Math.max(speed - 0.5, 0);
             else speed = Math.max(speed - 0.05, 0);
-            
-            document.getElementById('speed').innerText = Math.floor(speed * 15);
 
+            document.getElementById('speedVal').innerText = Math.floor(speed * 15);
+
+            // رسم الطريق
+            ctx.fillStyle = "#333"; ctx.fillRect(0,0, canvas.width, canvas.height);
+            roadLine = (roadLine + speed) % 80;
+            ctx.strokeStyle = "#fff"; ctx.setLineDash([40, 40]); ctx.lineDashOffset = -roadLine;
+            ctx.beginPath(); ctx.moveTo(canvas.width/2, 0); ctx.lineTo(canvas.width/2, canvas.height); ctx.stroke();
+
+            // رسم سيارة الزين
             drawCar(carX, canvas.height - 220, "#e74c3c", true);
 
-            if (Math.random() < 0.02 && speed > 1) {
-                enemies.push({ x: Math.random()*(canvas.width-60), y: -100, s: 2 + Math.random()*5, c: "#2ecc71" });
+            // السيارات المعادية
+            if (Math.random() < 0.02) {
+                enemies.push({ x: Math.random()*(canvas.width-60)+5, y: -100, s: 3+Math.random()*5, c: "#2ecc71" });
             }
 
             enemies.forEach((en, i) => {
-                en.y += en.s + (speed / 2);
+                en.y += en.s + (speed/2);
                 drawCar(en.x, en.y, en.c, false);
 
-                if (Math.abs(carX - en.x) < 45 && Math.abs((canvas.height - 220) - en.y) < 85) {
-                    active = false; alert("تحطمت السيارة! سكور: " + score); location.reload();
+                // تصادم
+                if (carX < en.x + 50 && carX + 50 > en.x && canvas.height-220 < en.y + 90 && canvas.height-130 > en.y) {
+                    gameActive = false; alert("تحطمت السيارة! سكورك: " + score); location.reload();
                 }
 
                 if (en.y > canvas.height) { enemies.splice(i, 1); score++; document.getElementById('score').innerText = score; }
@@ -98,16 +107,15 @@
             requestAnimationFrame(update);
         }
 
-        const touch = (id, s, e) => {
-            const el = document.getElementById(id);
-            el.ontouchstart = (ev) => { ev.preventDefault(); s(); };
-            el.ontouchend = (ev) => { ev.preventDefault(); e(); };
+        const btn = (id, f1, f2) => {
+            const b = document.getElementById(id);
+            b.ontouchstart = (e) => { e.preventDefault(); f1(); };
+            b.ontouchend = (e) => { e.preventDefault(); f2(); };
         };
-
-        touch('l', () => carX = Math.max(10, carX - 30), () => {});
-        touch('r', () => carX = Math.min(canvas.width-60, carX + 30), () => {});
-        touch('g', () => gassing = true, () => gassing = false);
-        touch('b', () => braking = true, () => braking = false);
+        btn('leftBtn', () => carX = Math.max(5, carX-30), () => {});
+        btn('rightBtn', () => carX = Math.min(canvas.width-55, carX+30), () => {});
+        btn('gasBtn', () => isGassing = true, () => isGassing = false);
+        btn('brakeBtn', () => isBraking = true, () => isBraking = false);
     </script>
 </body>
 </html>
