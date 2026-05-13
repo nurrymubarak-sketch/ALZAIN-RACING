@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALZAIN RACING</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #333; font-family: Arial, sans-serif; }
+        #gameCanvas { display: block; background: #555; margin: 0 auto; border-left: 5px dashed #fff; border-right: 5px dashed #fff; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; font-weight: bold; text-shadow: 2px 2px #000; }
+        #controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-around; }
+        .btn { width: 80px; height: 80px; background: rgba(255,255,255,0.3); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; color: white; user-select: none; -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">Score: <span id="score">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="controls">
+        <div class="btn" id="leftBtn">⬅️</div>
+        <div class="btn" id="rightBtn">➡️</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+
+        canvas.width = window.innerWidth > 400 ? 400 : window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let score = 0;
+        let gameActive = true;
+
+        const player = { x: canvas.width / 2 - 25, y: canvas.height - 120, w: 50, h: 80, color: '#f00' };
+        const enemies = [];
+
+        function createEnemy() {
+            const x = Math.random() * (canvas.width - 50);
+            enemies.push({ x: x, y: -100, w: 50, h: 80, color: '#0f0', speed: 5 + (score / 5) });
+        }
+
+        function drawRect(obj) {
+            ctx.fillStyle = obj.color;
+            ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+            // إضافة تفاصيل بسيطة للسيارة
+            ctx.fillStyle = "black";
+            ctx.fillRect(obj.x + 5, obj.y + 10, 10, 15);
+            ctx.fillRect(obj.x + 35, obj.y + 10, 10, 15);
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // رسم الطريق (خطوط بيضاء)
+            ctx.strokeStyle = "white";
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+
+            drawRect(player);
+
+            enemies.forEach((enemy, index) => {
+                enemy.y += enemy.speed;
+                drawRect(enemy);
+
+                // تصادم
+                if (player.x < enemy.x + enemy.w && player.x + player.w > enemy.x &&
+                    player.y < enemy.y + enemy.h && player.y + player.h > enemy.y) {
+                    gameActive = false;
+                    alert("Game Over! Score: " + score);
+                    location.reload();
+                }
+
+                if (enemy.y > canvas.height) {
+                    enemies.splice(index, 1);
+                    score++;
+                    scoreElement.innerText = score;
+                }
+            });
+
+            if (Math.random() < 0.02) createEnemy();
+            requestAnimationFrame(update);
+        }
+
+        // التحكم
+        const moveLeft = () => { if (player.x > 0) player.x -= 30; };
+        const moveRight = () => { if (player.x < canvas.width - player.w) player.x += 30; };
+
+        document.getElementById('leftBtn').ontouchstart = moveLeft;
+        document.getElementById('rightBtn').ontouchstart = moveRight;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowLeft") moveLeft();
+            if (e.key === "ArrowRight") moveRight();
+        });
+
+        update();
+    </script>
+</body>
+</html>
