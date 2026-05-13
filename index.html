@@ -3,27 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ALZAIN RACING - PRO</title>
+    <title>ALZAIN RACING PRO</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #111; font-family: sans-serif; touch-action: none; }
-        canvas { display: block; margin: 0 auto; background: #333; }
-        #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; pointer-events: none; }
-        #controls { position: absolute; bottom: 20px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 0 20px; box-sizing: border-box; }
-        .group { display: flex; gap: 10px; justify-content: center; }
-        .btn { width: 70px; height: 70px; background: rgba(255,255,255,0.15); border: 2px solid #666; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 24px; color: white; user-select: none; }
-        .btn:active { background: rgba(255,255,255,0.4); transform: scale(0.95); }
-        .gas { background: rgba(46, 204, 113, 0.3); border-color: #2ecc71; }
-        .brake { background: rgba(231, 76, 60, 0.3); border-color: #e74c3c; }
-        #start { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #2ecc71; color: white; padding: 20px; border-radius: 50px; cursor: pointer; font-weight: bold; z-index: 10; }
+        body { margin: 0; overflow: hidden; background: #222; font-family: sans-serif; touch-action: none; }
+        canvas { display: block; margin: 0 auto; background: #333; border-left: 4px solid #555; border-right: 4px solid #555; }
+        #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; pointer-events: none; z-index: 5; }
+        #controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box; }
+        .group { display: flex; gap: 15px; }
+        .btn { width: 75px; height: 75px; background: rgba(255,255,255,0.1); border: 2px solid #888; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; color: white; user-select: none; backdrop-filter: blur(5px); }
+        .btn:active { background: rgba(255,255,255,0.3); transform: scale(0.9); }
+        .gas { border-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .brake { border-color: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
+        #start { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #2ecc71; color: white; padding: 20px 40px; border-radius: 50px; cursor: pointer; font-weight: bold; z-index: 100; font-size: 20px; box-shadow: 0 0 20px #000; }
     </style>
 </head>
 <body>
+
     <div id="ui">
-        <h2 style="margin:0">ALZAIN RACING</h2>
-        <div>Score: <span id="score">0</span> | Speed: <span id="speedDisplay">0</span> km/h</div>
+        <h2 style="margin:0; color:#f1c40f;">ALZAIN RACING</h2>
+        <div style="font-size: 18px;">Score: <span id="score">0</span> | Speed: <span id="speedDisplay">0</span> km/h</div>
     </div>
-    <div id="start">تشغيل المحرك 🏎️</div>
+
+    <div id="start">🏁 ابدأ السباق الحقيقي 🏁</div>
     <canvas id="gameCanvas"></canvas>
+
     <div id="controls">
         <div class="group">
             <div class="btn" id="leftBtn">◀️</div>
@@ -34,16 +37,21 @@
             <div class="btn gas" id="gasBtn">🏁</div>
         </div>
     </div>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start');
+        
         canvas.width = window.innerWidth > 450 ? 450 : window.innerWidth;
         canvas.height = window.innerHeight;
+
         let score = 0, speed = 0, gameActive = false, isGassing = false, isBraking = false;
         let audioCtx, engineOsc;
+
         const player = { x: canvas.width / 2 - 25, y: canvas.height - 220, w: 50, h: 90 };
         const enemies = [];
+
         function initAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             engineOsc = audioCtx.createOscillator();
@@ -54,37 +62,71 @@
             engineOsc.connect(gain); gain.connect(audioCtx.destination);
             engineOsc.start();
         }
-        startBtn.onclick = () => { initAudio(); gameActive = true; startBtn.style.display = 'none'; animate(); };
+
+        startBtn.onclick = () => {
+            if(!audioCtx) initAudio();
+            gameActive = true;
+            startBtn.style.display = 'none';
+            animate();
+        };
+
         function animate() {
             if (!gameActive) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (isGassing) speed = Math.min(speed + 0.15, 12 + score/5);
-            else if (isBraking) speed = Math.max(speed - 0.4, 0);
+
+            // منطق السرعة والفرامل
+            if (isGassing) speed = Math.min(speed + 0.15, 12 + score/10);
+            else if (isBraking) speed = Math.max(speed - 0.5, 0);
             else speed = Math.max(speed - 0.05, 0);
-            if (engineOsc) engineOsc.frequency.setTargetAtTime(40 + (speed * 12), audioCtx.currentTime, 0.1);
-            document.getElementById('speedDisplay').innerText = Math.floor(speed * 15);
+
+            if (engineOsc) engineOsc.frequency.setTargetAtTime(40 + (speed * 15), audioCtx.currentTime, 0.1);
+            document.getElementById('speedDisplay').innerText = Math.floor(speed * 18);
+
+            // رسم الطريق المتحرك
             ctx.fillStyle = "#333"; ctx.fillRect(0,0, canvas.width, canvas.height);
-            ctx.strokeStyle = "white"; ctx.setLineDash([30, 30]);
+            ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.setLineDash([40, 40]);
+            ctx.lineWidth = 5;
             ctx.beginPath(); ctx.moveTo(canvas.width/2, 0); ctx.lineTo(canvas.width/2, canvas.height); ctx.stroke();
-            ctx.fillStyle = "#e74c3c"; ctx.fillRect(player.x, player.y, player.w, player.h);
-            if (Math.random() < 0.02) enemies.push({ x: Math.random()*(canvas.width-50), y: -100, speed: 2 + Math.random()*5 });
+
+            // رسم سيارة اللاعب (إيموجي سيارة حمراء)
+            ctx.font = "60px serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🏎️", player.x + 25, player.y + 60);
+
+            // توليد سيارات الأعداء
+            if (Math.random() < 0.02) {
+                enemies.push({ x: Math.random()*(canvas.width-60) + 30, y: -100, speed: 2 + Math.random()*5, icon: ["🚗", "🚓", "🚕", "🚛"][Math.floor(Math.random()*4)] });
+            }
+
             enemies.forEach((en, i) => {
                 en.y += en.speed + (speed/2);
-                ctx.fillStyle = "#2ecc71"; ctx.fillRect(en.x, en.y, 50, 80);
-                if (player.x < en.x + 50 && player.x + 50 > en.x && player.y < en.y + 80 && player.y + 90 > en.y) {
-                    gameActive = false; alert("تحطمت السيارة! السكور: " + score); location.reload();
+                ctx.fillText(en.icon, en.x, en.y);
+
+                // تصادم دقيق
+                if (Math.abs(player.x + 25 - en.x) < 40 && Math.abs(player.y + 40 - en.y) < 60) {
+                    gameActive = false;
+                    alert("انتهى السباق! السكور: " + score);
+                    location.reload();
                 }
-                if (en.y > canvas.height) { enemies.splice(i, 1); score++; document.getElementById('score').innerText = score; }
+
+                if (en.y > canvas.height + 100) {
+                    enemies.splice(i, 1);
+                    score++;
+                    document.getElementById('score').innerText = score;
+                }
             });
+
             requestAnimationFrame(animate);
         }
+
         const setupBtn = (id, startFunc, endFunc) => {
             const btn = document.getElementById(id);
-            btn.ontouchstart = (e) => { e.preventDefault(); startFunc(); };
-            btn.ontouchend = (e) => { e.preventDefault(); endFunc(); };
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); startFunc(); });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); endFunc(); });
         };
-        setupBtn('leftBtn', () => player.x = Math.max(0, player.x - 25), () => {});
-        setupBtn('rightBtn', () => player.x = Math.min(canvas.width-50, player.x + 25), () => {});
+
+        setupBtn('leftBtn', () => player.x = Math.max(0, player.x - 30), () => {});
+        setupBtn('rightBtn', () => player.x = Math.min(canvas.width-50, player.x + 30), () => {});
         setupBtn('gasBtn', () => isGassing = true, () => isGassing = false);
         setupBtn('brakeBtn', () => isBraking = true, () => isBraking = false);
     </script>
